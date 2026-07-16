@@ -1,0 +1,33 @@
+{
+  "corpus": "Fixture Test Corpus",
+  "document_count": 3,
+  "documents": [
+    {
+      "filename": "doc1.md",
+      "title": "Fixture Policy One",
+      "type": "markdown",
+      "section_outline": [
+        {"heading": "Section A", "subsections": []},
+        {"heading": "Section B", "subsections": []}
+      ]
+    },
+    {
+      "filename": "doc2.md",
+      "title": "Fixture Policy Two",
+      "type": "markdown",
+      "section_outline": [
+        {"heading": "Section A", "subsections": []},
+        {"heading": "Section B", "subsections": []}
+      ]
+    },
+    {
+      "filename": "doc3.md",
+      "title": "Fixture Policy Three",
+      "type": "markdown",
+      "section_outline": [
+        {"heading": "Section A", "subsections": []},
+        {"heading": "Section B", "subsections": []}
+      ]
+    }
+  ]
+}

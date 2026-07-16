@@ -1,0 +1,27 @@
+# Python
+backend/.venv/
+corpus/.venv/
+__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Secrets
+.env
+backend/.env
+frontend/.env
+*.env.local
+
+# OS
+.DS_Store
+
+# Docker
+pg_data/
+
+# Internal planning docs / internship source materials (not for the public repo)
+docs/
+1_Program_Handbook.docx
+2_Week 1_Use_Case_1_RAG_Chatbot_Brief.docx
+~$*.docx

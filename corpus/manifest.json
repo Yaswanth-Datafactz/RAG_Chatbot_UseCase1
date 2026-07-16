@@ -1,0 +1,535 @@
+{
+  "corpus": "Contoso Corp Policy Corpus",
+  "document_count": 20,
+  "documents": [
+    {
+      "filename": "employee-handbook.pdf",
+      "title": "Contoso Corp Employee Handbook",
+      "type": "pdf",
+      "section_outline": [
+        {
+          "heading": "Welcome to Contoso Corp",
+          "subsections": []
+        },
+        {
+          "heading": "Employment Classifications",
+          "subsections": [
+            "Full-Time and Part-Time Status",
+            "Exempt and Non-Exempt Status",
+            "Introductory Period"
+          ]
+        },
+        {
+          "heading": "Workplace Conduct Expectations",
+          "subsections": [
+            "Attendance and Punctuality",
+            "Dress Code"
+          ]
+        },
+        {
+          "heading": "Where to Find More Information",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "code-of-conduct.pdf",
+      "title": "Contoso Corp Code of Conduct and Business Ethics Policy",
+      "type": "pdf",
+      "section_outline": [
+        {
+          "heading": "Purpose and Scope",
+          "subsections": []
+        },
+        {
+          "heading": "Core Ethical Principles",
+          "subsections": [
+            "Integrity in Business Dealings",
+            "Conflicts of Interest",
+            "Gifts and Entertainment"
+          ]
+        },
+        {
+          "heading": "Reporting Violations",
+          "subsections": [
+            "Internal Reporting Channels",
+            "Non-Retaliation Commitment"
+          ]
+        },
+        {
+          "heading": "Consequences of Violations",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "eeo-anti-harassment-policy.pdf",
+      "title": "Contoso Corp Equal Employment Opportunity and Anti-Harassment Policy",
+      "type": "pdf",
+      "section_outline": [
+        {
+          "heading": "Equal Employment Opportunity Statement",
+          "subsections": []
+        },
+        {
+          "heading": "Prohibited Harassment",
+          "subsections": [
+            "Sexual Harassment",
+            "Other Forms of Harassment"
+          ]
+        },
+        {
+          "heading": "Reporting and Investigation Process",
+          "subsections": [
+            "How to File a Complaint",
+            "Investigation Timeline"
+          ]
+        },
+        {
+          "heading": "Non-Retaliation",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "diversity-equity-and-inclusion-policy.docx",
+      "title": "Contoso Corp Diversity, Equity, and Inclusion Policy",
+      "type": "docx",
+      "section_outline": [
+        {
+          "heading": "Our Commitment to Diversity, Equity, and Inclusion",
+          "subsections": []
+        },
+        {
+          "heading": "Employee Resource Groups",
+          "subsections": [
+            "How to Join or Start a Group",
+            "ERG Leadership and Funding"
+          ]
+        },
+        {
+          "heading": "Inclusive Hiring Practices",
+          "subsections": []
+        },
+        {
+          "heading": "Diversity Education and Training",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "pto-and-leave-policy.docx",
+      "title": "Contoso Corp Paid Time Off and Leave Policy",
+      "type": "docx",
+      "section_outline": [
+        {
+          "heading": "Overview of Leave Types",
+          "subsections": []
+        },
+        {
+          "heading": "Paid Time Off (PTO)",
+          "subsections": [
+            "Accrual Rates",
+            "Requesting and Approving PTO",
+            "Carryover and Payout"
+          ]
+        },
+        {
+          "heading": "Sick Leave",
+          "subsections": [
+            "Accrual and Usage"
+          ]
+        },
+        {
+          "heading": "Bereavement Leave",
+          "subsections": []
+        },
+        {
+          "heading": "Jury Duty and Civic Leave",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "parental-and-family-leave-policy.docx",
+      "title": "Contoso Corp Parental and Family Leave Policy",
+      "type": "docx",
+      "section_outline": [
+        {
+          "heading": "Eligibility",
+          "subsections": []
+        },
+        {
+          "heading": "Birth Parent Leave",
+          "subsections": []
+        },
+        {
+          "heading": "Non-Birth Parent and Adoption Leave",
+          "subsections": []
+        },
+        {
+          "heading": "Family and Medical Leave (FMLA-Aligned)",
+          "subsections": [
+            "Qualifying Reasons",
+            "Job Protection and Benefits Continuation"
+          ]
+        },
+        {
+          "heading": "Returning to Work",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "health-and-welfare-benefits-guide.pdf",
+      "title": "Contoso Corp Health and Welfare Benefits Guide",
+      "type": "pdf",
+      "section_outline": [
+        {
+          "heading": "Benefits Eligibility",
+          "subsections": []
+        },
+        {
+          "heading": "Medical Plan Options",
+          "subsections": [
+            "PPO Plan",
+            "High-Deductible Health Plan with HSA"
+          ]
+        },
+        {
+          "heading": "Dental and Vision Coverage",
+          "subsections": []
+        },
+        {
+          "heading": "Life and Disability Insurance",
+          "subsections": []
+        },
+        {
+          "heading": "Employee Assistance Program",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "retirement-savings-plan-guide.pdf",
+      "title": "Contoso Corp Retirement Savings Plan Guide",
+      "type": "pdf",
+      "section_outline": [
+        {
+          "heading": "Plan Overview",
+          "subsections": []
+        },
+        {
+          "heading": "Eligibility and Enrollment",
+          "subsections": []
+        },
+        {
+          "heading": "Contribution Limits",
+          "subsections": []
+        },
+        {
+          "heading": "Company Matching Contributions",
+          "subsections": []
+        },
+        {
+          "heading": "Vesting Schedule",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "remote-work-and-flexible-work-policy.md",
+      "title": "Contoso Corp Remote Work and Flexible Work Arrangements Policy",
+      "type": "markdown",
+      "section_outline": [
+        {
+          "heading": "Eligibility for Remote Work",
+          "subsections": []
+        },
+        {
+          "heading": "Hybrid Work Expectations",
+          "subsections": []
+        },
+        {
+          "heading": "Home Office Equipment and Stipend",
+          "subsections": []
+        },
+        {
+          "heading": "Core Collaboration Hours",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "business-travel-and-expense-policy.docx",
+      "title": "Contoso Corp Business Travel and Expense Reimbursement Policy",
+      "type": "docx",
+      "section_outline": [
+        {
+          "heading": "Booking Business Travel",
+          "subsections": []
+        },
+        {
+          "heading": "Reimbursable Expenses",
+          "subsections": [
+            "Airfare and Lodging",
+            "Meals and Incidentals",
+            "Personal Vehicle Mileage"
+          ]
+        },
+        {
+          "heading": "Non-Reimbursable Expenses",
+          "subsections": []
+        },
+        {
+          "heading": "Submitting Expense Reports",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "information-security-and-acceptable-use-policy.md",
+      "title": "Contoso Corp Information Security and Acceptable Use Policy",
+      "type": "markdown",
+      "section_outline": [
+        {
+          "heading": "Purpose",
+          "subsections": []
+        },
+        {
+          "heading": "Acceptable Use of Company Systems",
+          "subsections": []
+        },
+        {
+          "heading": "Password and Authentication Requirements",
+          "subsections": []
+        },
+        {
+          "heading": "Handling Confidential Data",
+          "subsections": []
+        },
+        {
+          "heading": "Reporting Security Incidents",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "data-privacy-and-confidentiality-policy.docx",
+      "title": "Contoso Corp Data Privacy and Confidentiality Policy",
+      "type": "docx",
+      "section_outline": [
+        {
+          "heading": "Scope",
+          "subsections": []
+        },
+        {
+          "heading": "Categories of Protected Data",
+          "subsections": []
+        },
+        {
+          "heading": "Employee Confidentiality Obligations",
+          "subsections": []
+        },
+        {
+          "heading": "Customer Data Handling",
+          "subsections": []
+        },
+        {
+          "heading": "Data Retention and Disposal",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "social-media-and-external-communications-policy.md",
+      "title": "Contoso Corp Social Media and External Communications Policy",
+      "type": "markdown",
+      "section_outline": [
+        {
+          "heading": "Purpose",
+          "subsections": []
+        },
+        {
+          "heading": "Personal Social Media Use",
+          "subsections": []
+        },
+        {
+          "heading": "Speaking on Behalf of Contoso",
+          "subsections": []
+        },
+        {
+          "heading": "Media and Analyst Inquiries",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "workplace-health-and-safety-policy.pdf",
+      "title": "Contoso Corp Workplace Health and Safety Policy",
+      "type": "pdf",
+      "section_outline": [
+        {
+          "heading": "Safety Responsibilities",
+          "subsections": []
+        },
+        {
+          "heading": "Incident Reporting",
+          "subsections": []
+        },
+        {
+          "heading": "Emergency Procedures",
+          "subsections": [
+            "Fire Evacuation",
+            "Medical Emergencies"
+          ]
+        },
+        {
+          "heading": "Workplace Violence Prevention",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "performance-management-and-review-policy.docx",
+      "title": "Contoso Corp Performance Management and Review Policy",
+      "type": "docx",
+      "section_outline": [
+        {
+          "heading": "Performance Review Cycle",
+          "subsections": []
+        },
+        {
+          "heading": "Goal Setting",
+          "subsections": []
+        },
+        {
+          "heading": "Rating Scale",
+          "subsections": []
+        },
+        {
+          "heading": "Performance Improvement Plans",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "compensation-and-pay-practices-policy.pdf",
+      "title": "Contoso Corp Compensation and Pay Practices Policy",
+      "type": "pdf",
+      "section_outline": [
+        {
+          "heading": "Pay Grades and Structure",
+          "subsections": []
+        },
+        {
+          "heading": "Pay Frequency and Pay Days",
+          "subsections": []
+        },
+        {
+          "heading": "Overtime Eligibility",
+          "subsections": []
+        },
+        {
+          "heading": "Annual Merit Increase Process",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "new-hire-onboarding-guide.md",
+      "title": "Contoso Corp New Hire Onboarding Guide",
+      "type": "markdown",
+      "section_outline": [
+        {
+          "heading": "Before Your First Day",
+          "subsections": []
+        },
+        {
+          "heading": "Your First Day",
+          "subsections": []
+        },
+        {
+          "heading": "Your First Week",
+          "subsections": []
+        },
+        {
+          "heading": "30-60-90 Day Milestones",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "offboarding-and-separation-policy.md",
+      "title": "Contoso Corp Offboarding and Separation Policy",
+      "type": "markdown",
+      "section_outline": [
+        {
+          "heading": "Types of Separation",
+          "subsections": []
+        },
+        {
+          "heading": "Resignation Notice Period",
+          "subsections": []
+        },
+        {
+          "heading": "Final Pay and Benefits Continuation",
+          "subsections": []
+        },
+        {
+          "heading": "Return of Company Property",
+          "subsections": []
+        },
+        {
+          "heading": "Exit Interview",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "workplace-accommodation-and-anti-discrimination-policy.docx",
+      "title": "Contoso Corp Workplace Accommodation and Anti-Discrimination Policy",
+      "type": "docx",
+      "section_outline": [
+        {
+          "heading": "Anti-Discrimination Commitment",
+          "subsections": []
+        },
+        {
+          "heading": "Requesting a Disability Accommodation",
+          "subsections": [
+            "Interactive Process",
+            "Approval and Implementation"
+          ]
+        },
+        {
+          "heading": "Religious Accommodation",
+          "subsections": []
+        }
+      ]
+    },
+    {
+      "filename": "learning-and-professional-development-policy.md",
+      "title": "Contoso Corp Learning and Professional Development Policy",
+      "type": "markdown",
+      "section_outline": [
+        {
+          "heading": "Internal Training Catalog",
+          "subsections": []
+        },
+        {
+          "heading": "Professional Certification Support",
+          "subsections": []
+        },
+        {
+          "heading": "Conference and External Training Attendance",
+          "subsections": []
+        },
+        {
+          "heading": "Mentorship Program",
+          "subsections": []
+        }
+      ]
+    }
+  ]
+}

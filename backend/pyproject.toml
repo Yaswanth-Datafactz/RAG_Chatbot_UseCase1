@@ -1,0 +1,10 @@
+[project]
+name = "rag-chatbot-backend"
+version = "0.1.0"
+description = "RAG Knowledge Chatbot backend (DataFactZ AI Engineering Internship, Use Case 1)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
