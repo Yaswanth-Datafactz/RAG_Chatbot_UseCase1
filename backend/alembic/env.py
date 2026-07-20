@@ -23,7 +23,12 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Single source of truth for the DB URL is app settings (.env), not alembic.ini.
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# set_main_option() stores the value via configparser, which treats '%' as its
+# own interpolation syntax (e.g. '%(name)s') -- a URL-encoded character in the
+# password (e.g. '%40' for '@') otherwise raises "invalid interpolation syntax"
+# rather than being stored literally. Escaping '%' as '%%' round-trips correctly
+# through configparser's interpolation and back to the original URL.
+config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 
