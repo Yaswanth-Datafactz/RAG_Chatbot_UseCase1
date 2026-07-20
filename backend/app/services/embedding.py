@@ -28,6 +28,7 @@ class EmbeddingClient:
             api_key=settings.azure_openai_api_key,
             azure_endpoint=settings.azure_openai_endpoint,
             api_version=settings.azure_openai_api_version,
+            timeout=60.0,
         )
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:

@@ -3,6 +3,7 @@
 // purely so the app works out of the box in local dev.
 const DEFAULT_BASE_URL = 'http://localhost:8000/api/v1'
 const DEFAULT_API_KEY = 'changeme-dev-key'
+const REQUEST_TIMEOUT_MS = 20_000
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL
 const API_KEY = import.meta.env.VITE_API_KEY ?? DEFAULT_API_KEY
@@ -39,14 +40,28 @@ export async function parseErrorBody(response: Response): Promise<{ type: string
  * centralized {"error": {"type","message"}} shape into a typed ApiError
  * instead of a generic non-2xx failure. */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-      ...init?.headers,
-    },
-  })
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS)
+
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: init?.signal ?? timeoutController.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+        ...init?.headers,
+      },
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError('The server took too long to respond. Please try again.', 0, 'timeout')
+    }
+    throw new ApiError('Could not reach the server. Check your connection and try again.', 0, 'network')
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     const { type, message } = await parseErrorBody(response)

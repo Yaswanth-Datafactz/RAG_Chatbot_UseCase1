@@ -84,7 +84,12 @@ class SearchResultChunk:
 
 def _index_client() -> SearchIndexClient:
     settings = get_settings()
-    return SearchIndexClient(settings.azure_search_endpoint, AzureKeyCredential(settings.azure_search_api_key))
+    return SearchIndexClient(
+        settings.azure_search_endpoint,
+        AzureKeyCredential(settings.azure_search_api_key),
+        connection_timeout=10,
+        read_timeout=30,
+    )
 
 
 def _search_client() -> SearchClient:
@@ -93,6 +98,8 @@ def _search_client() -> SearchClient:
         settings.azure_search_endpoint,
         settings.azure_search_index_name,
         AzureKeyCredential(settings.azure_search_api_key),
+        connection_timeout=10,
+        read_timeout=30,
     )
 
 
