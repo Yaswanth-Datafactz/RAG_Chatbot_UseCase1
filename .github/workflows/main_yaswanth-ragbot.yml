@@ -63,4 +63,4 @@ jobs:
         with:
           app-name: 'yaswanth-ragbot'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4294C79195B746CFB14CDCC1EE355E16 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_E8FD42C6764844E18CF9CB8565EFCBD0 }}
