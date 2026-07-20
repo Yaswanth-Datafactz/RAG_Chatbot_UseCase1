@@ -27,13 +27,19 @@ router = APIRouter(
 )
 
 
-def _default_generation_adapter() -> GenerationAdapter:
-    """A zero-arg wrapper around get_generation_adapter() for use as a
-    FastAPI dependency: get_generation_adapter() itself takes an optional
-    `provider` override for tests/callers, and Depends() would otherwise
-    expose that as a caller-controlled `provider` query parameter on this
-    route, letting any request pick its own generation provider."""
-    return get_generation_adapter()
+def _default_generation_adapter(body: ChatMessageRequest) -> GenerationAdapter:
+    """A FastAPI dependency wrapping get_generation_adapter(): declaring
+    the same `body: ChatMessageRequest` parameter the route itself takes
+    lets FastAPI resolve it once and share it, rather than reading the
+    request body twice. `body.provider` (the frontend's model picker,
+    ChatMessageRequest.provider) overrides GENERATION_PROVIDER for this
+    one message when present; get_generation_adapter(None) falls back to
+    the configured default exactly as before. Kept as its own
+    Depends()-wrapped function (rather than inlined in post_message)
+    specifically so tests can override it via
+    app.dependency_overrides[_default_generation_adapter] without hitting
+    a real generation provider."""
+    return get_generation_adapter(body.provider)
 
 
 @router.post("/{conversation_id}/messages", responses={404: {"description": "Conversation not found"}})

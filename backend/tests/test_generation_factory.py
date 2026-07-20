@@ -3,6 +3,7 @@ import pytest
 from app.services.generation import get_generation_adapter
 from app.services.generation.azure_openai import AzureOpenAIGenerationAdapter
 from app.services.generation.claude import ClaudeGenerationAdapter
+from app.services.generation.deepseek import DeepSeekGenerationAdapter
 
 
 def test_claude_provider_returns_claude_adapter():
@@ -15,6 +16,12 @@ def test_azure_openai_provider_returns_azure_adapter():
     adapter = get_generation_adapter(provider="azure_openai")
 
     assert isinstance(adapter, AzureOpenAIGenerationAdapter)
+
+
+def test_deepseek_provider_returns_deepseek_adapter():
+    adapter = get_generation_adapter(provider="deepseek")
+
+    assert isinstance(adapter, DeepSeekGenerationAdapter)
 
 
 def test_provider_name_is_case_insensitive():

@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "description": "Phase 8 evaluation question set (docs/plan.md, docs/phase-8.md). in_corpus_questions have a known-correct source, verified against corpus/manifest.json's real section outlines -- not invented. out_of_corpus_questions are copied verbatim from docs/phase-1.md's 6 deliberate corpus gaps and are expected to trigger the refusal gate, not grounded retrieval.",
+  "in_corpus_questions": [
+    {
+      "id": "ic-01",
+      "question": "What is the vesting schedule for Contoso's retirement savings plan company match?",
+      "expected_document_title": "Contoso Corp Retirement Savings Plan Guide",
+      "expected_section_path": "Contoso Corp Retirement Savings Plan Guide > Vesting Schedule",
+      "format": "pdf"
+    },
+    {
+      "id": "ic-02",
+      "question": "What is the PTO accrual rate for full-time employees?",
+      "expected_document_title": "Contoso Corp Paid Time Off and Leave Policy",
+      "expected_section_path": "Contoso Corp Paid Time Off and Leave Policy > Paid Time Off (PTO) > Accrual Rates",
+      "format": "docx"
+    },
+    {
+      "id": "ic-03",
+      "question": "How many unused PTO days can I carry over into the next calendar year?",
+      "expected_document_title": "Contoso Corp Paid Time Off and Leave Policy",
+      "expected_section_path": "Contoso Corp Paid Time Off and Leave Policy > Paid Time Off (PTO) > Carryover and Payout",
+      "format": "docx"
+    },
+    {
+      "id": "ic-04",
+      "question": "What are Contoso's password and multi-factor authentication requirements?",
+      "expected_document_title": "Contoso Corp Information Security and Acceptable Use Policy",
+      "expected_section_path": "Contoso Corp Information Security and Acceptable Use Policy > Password and Authentication Requirements",
+      "format": "markdown"
+    },
+    {
+      "id": "ic-05",
+      "question": "Who should I contact to report a suspected phishing email?",
+      "expected_document_title": "Contoso Corp Information Security and Acceptable Use Policy",
+      "expected_section_path": "Contoso Corp Information Security and Acceptable Use Policy > Reporting Security Incidents",
+      "format": "markdown"
+    },
+    {
+      "id": "ic-06",
+      "question": "What is the home office equipment stipend for remote employees?",
+      "expected_document_title": "Contoso Corp Remote Work and Flexible Work Arrangements Policy",
+      "expected_section_path": "Contoso Corp Remote Work and Flexible Work Arrangements Policy > Home Office Equipment and Stipend",
+      "format": "markdown"
+    },
+    {
+      "id": "ic-07",
+      "question": "What should employees do during a fire alarm evacuation?",
+      "expected_document_title": "Contoso Corp Workplace Health and Safety Policy",
+      "expected_section_path": "Contoso Corp Workplace Health and Safety Policy > Emergency Procedures > Fire Evacuation",
+      "format": "pdf"
+    },
+    {
+      "id": "ic-08",
+      "question": "How is mileage reimbursed when I use my personal vehicle for business travel?",
+      "expected_document_title": "Contoso Corp Business Travel and Expense Reimbursement Policy",
+      "expected_section_path": "Contoso Corp Business Travel and Expense Reimbursement Policy > Reimbursable Expenses > Personal Vehicle Mileage",
+      "format": "docx"
+    },
+    {
+      "id": "ic-09",
+      "question": "Who is eligible for overtime pay at Contoso?",
+      "expected_document_title": "Contoso Corp Compensation and Pay Practices Policy",
+      "expected_section_path": "Contoso Corp Compensation and Pay Practices Policy > Overtime Eligibility",
+      "format": "pdf"
+    }
+  ],
+  "out_of_corpus_questions": [
+    {
+      "id": "oc-01",
+      "question": "How does my RSU vesting schedule work?",
+      "gap_topic": "Equity compensation / stock options / RSU vesting",
+      "adjacent_covered_topic": "Compensation and Pay Practices Policy (base pay, pay grades, overtime, merit increases -- explicitly not equity)"
+    },
+    {
+      "id": "oc-02",
+      "question": "Am I eligible for a sabbatical after 5 years?",
+      "gap_topic": "Sabbatical leave",
+      "adjacent_covered_topic": "Paid Time Off and Leave Policy (PTO, sick leave, bereavement, jury duty -- no sabbatical)"
+    },
+    {
+      "id": "oc-03",
+      "question": "Does Contoso sponsor a work visa if I relocate internationally?",
+      "gap_topic": "International relocation / visa sponsorship",
+      "adjacent_covered_topic": "Remote Work / Business Travel policies (flexible location and expense reimbursement -- not immigration)"
+    },
+    {
+      "id": "oc-04",
+      "question": "What's the company car allowance for my role?",
+      "gap_topic": "Company car / vehicle allowance",
+      "adjacent_covered_topic": "Business Travel and Expense Policy (personal vehicle mileage reimbursement -- not a company-provided vehicle)"
+    },
+    {
+      "id": "oc-05",
+      "question": "What's the severance package for a VP-level termination?",
+      "gap_topic": "Executive severance / golden parachute terms",
+      "adjacent_covered_topic": "Offboarding and Separation Policy (standard resignation/termination/layoff -- not executive-specific terms)"
+    },
+    {
+      "id": "oc-06",
+      "question": "What's the tuition reimbursement cap for a part-time MBA?",
+      "gap_topic": "Tuition reimbursement for external degree programs",
+      "adjacent_covered_topic": "Learning and Professional Development Policy (internal training, certification exam fees, conferences -- not degree tuition)"
+    }
+  ]
+}

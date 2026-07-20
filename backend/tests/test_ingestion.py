@@ -13,6 +13,7 @@ failure partway through a new ingestion run leaves the previously-current
 run's chunks fully intact in both Postgres and the search index.
 """
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -185,6 +186,64 @@ def test_successful_reindex_swaps_current_and_cleans_up_previous_run():
         # run's documents present.
         assert fake_repo.hybrid_search("x", [0.0], run_id=str(old_run_id), top=100) == []
         assert len(fake_repo.hybrid_search("x", [0.0], run_id=str(new_run_id), top=100)) > 0
+    finally:
+        _cleanup_run(old_run_id)
+        _cleanup_run(new_run_id)
+
+
+def test_reindex_with_changed_content_deletes_orphaned_document_row(tmp_path):
+    """Real-world scenario this regression covers: a corpus file's bytes
+    change between two ingestion runs (content edited, not just
+    re-ingested unchanged). _upsert_document() can't match the old
+    sha256, so it inserts a fresh Document row for doc1's new content;
+    the old row's chunks get cascade-deleted with the previous run at
+    swap time, leaving the old row referencing zero chunks anywhere.
+    _cleanup_previous_run() must delete that orphan rather than leaving
+    it to accumulate -- otherwise the admin documents list shows the same
+    title multiple times with stale 0-chunk rows, which is genuinely
+    confusing rather than a display quirk."""
+    fake_repo = FakeSearchRepo()
+
+    old_run_id = _new_run()
+    run_ingestion(
+        old_run_id,
+        corpus_dir=MINI_CORPUS_DIR,
+        search_repo_module=fake_repo,
+        embedding_client=FailAfterNCallsEmbeddingClient(),
+    )
+
+    # Copy the fixture corpus to a temp dir and change doc1.md's content
+    # (and only doc1.md's) so its sha256 no longer matches the old run's
+    # Document row; doc2.md/doc3.md are byte-identical and should reuse
+    # their existing rows exactly like the unchanged-content case already
+    # covered by test_successful_reindex_swaps_current_and_cleans_up_previous_run.
+    changed_corpus_dir = tmp_path / "changed_corpus"
+    shutil.copytree(MINI_CORPUS_DIR, changed_corpus_dir)
+    (changed_corpus_dir / "doc1.md").write_text(
+        (changed_corpus_dir / "doc1.md").read_text() + "\n\nNewly added paragraph.\n"
+    )
+
+    new_run_id = _new_run()
+
+    try:
+        run_ingestion(
+            new_run_id,
+            corpus_dir=changed_corpus_dir,
+            search_repo_module=fake_repo,
+            embedding_client=FailAfterNCallsEmbeddingClient(),
+        )
+
+        new_run = _get_run(new_run_id)
+        assert new_run.status == "succeeded"
+        assert new_run.is_current is True
+
+        db = SessionLocal()
+        try:
+            for title in ("Fixture Policy One", "Fixture Policy Two", "Fixture Policy Three"):
+                rows = db.execute(select(Document).where(Document.title == title)).scalars().all()
+                assert len(rows) == 1, f"expected exactly one Document row for {title!r}, found {len(rows)}"
+        finally:
+            db.close()
     finally:
         _cleanup_run(old_run_id)
         _cleanup_run(new_run_id)

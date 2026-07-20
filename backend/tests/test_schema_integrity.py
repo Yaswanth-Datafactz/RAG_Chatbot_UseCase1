@@ -24,12 +24,26 @@ def _make_document(session, suffix="a"):
     return doc
 
 
+def _suppress_real_current_run(db_session) -> None:
+    """The dev database can now hold a real, committed current run (live
+    Azure credentials configured after Phase 6/7) -- Phase 0's partial
+    unique index allows only one is_current=true row at a time. Since
+    db_session never commits (conftest.py rolls its transaction back at
+    teardown), un-marking it here reverts automatically -- see the same
+    pattern in test_retrieval.py."""
+    existing = db_session.query(IngestionRun).filter(IngestionRun.is_current.is_(True)).one_or_none()
+    if existing is not None:
+        existing.is_current = False
+        db_session.flush()
+
+
 def test_only_one_current_ingestion_run_allowed(db_session):
-    run_a = IngestionRun(status="succeeded", embedding_model="text-embedding-3-small", is_current=True)
+    _suppress_real_current_run(db_session)
+    run_a = IngestionRun(status="succeeded", embedding_model="text-embedding-3-large", is_current=True)
     db_session.add(run_a)
     db_session.flush()
 
-    run_b = IngestionRun(status="succeeded", embedding_model="text-embedding-3-small", is_current=True)
+    run_b = IngestionRun(status="succeeded", embedding_model="text-embedding-3-large", is_current=True)
     db_session.add(run_b)
     with pytest.raises(IntegrityError):
         db_session.flush()
@@ -54,7 +68,7 @@ def test_deleting_conversation_cascades_to_messages(db_session):
 
 def test_deleting_chunk_nulls_citation_instead_of_deleting_it(db_session):
     doc = _make_document(db_session, suffix="1")
-    run = IngestionRun(status="succeeded", embedding_model="text-embedding-3-small")
+    run = IngestionRun(status="succeeded", embedding_model="text-embedding-3-large")
     db_session.add(run)
     db_session.flush()
 

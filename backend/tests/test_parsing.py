@@ -56,7 +56,7 @@ def test_parse_docx_reads_real_word_heading_styles():
         "Accrual Rates",
     ) in paths
     accrual = next(s for s in sections if s.heading_path[-1] == "Accrual Rates")
-    assert "1.67 days per month" in accrual.text
+    assert "6.15 hours per pay period" in accrual.text
 
 
 def test_parse_pdf_recovers_headings_via_font_size_and_tracks_page_no():
@@ -83,14 +83,28 @@ def test_every_corpus_document_parses_to_its_manifest_outline(entry):
         else:
             raise AssertionError(f"unexpected heading depth: {s.heading_path}")
 
-    expected_pairs = set()
+    # A section with subsections can *also* carry its own directly-attached
+    # paragraphs (an intro before the first subsection) -- generate_corpus.py's
+    # per-section "paragraphs" and "subsections" are independent, and the
+    # parser correctly emits that intro content as its own (heading, None)
+    # chunk rather than silently dropping it. manifest.json's outline doesn't
+    # record whether a section has its own paragraphs (only its heading and
+    # subsection headings), so (heading, None) is REQUIRED when a section has
+    # no subsections, but only ALLOWED (not required) when it does.
+    required_pairs = set()
+    allowed_pairs = set()
     for outline_entry in entry["section_outline"]:
         heading = outline_entry["heading"]
         subs = outline_entry["subsections"]
         if subs:
             for sub in subs:
-                expected_pairs.add((heading, sub))
+                required_pairs.add((heading, sub))
+            allowed_pairs.add((heading, None))
         else:
-            expected_pairs.add((heading, None))
+            required_pairs.add((heading, None))
+    allowed_pairs |= required_pairs
 
-    assert parsed_pairs == expected_pairs
+    missing = required_pairs - parsed_pairs
+    assert not missing, f"manifest-required sections/subsections not recovered by the parser: {missing}"
+    unexpected = parsed_pairs - allowed_pairs
+    assert not unexpected, f"parser recovered headings not present in manifest.json's outline: {unexpected}"

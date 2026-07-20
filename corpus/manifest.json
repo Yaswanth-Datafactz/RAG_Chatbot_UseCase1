@@ -16,15 +16,29 @@
           "subsections": [
             "Full-Time and Part-Time Status",
             "Exempt and Non-Exempt Status",
-            "Introductory Period"
+            "Introductory Period",
+            "Job Levels and Title Structure"
           ]
         },
         {
           "heading": "Workplace Conduct Expectations",
           "subsections": [
             "Attendance and Punctuality",
-            "Dress Code"
+            "Dress Code",
+            "Use of Company Property and Workspaces"
           ]
+        },
+        {
+          "heading": "Workplace Technology and Equipment",
+          "subsections": []
+        },
+        {
+          "heading": "Anti-Retaliation",
+          "subsections": []
+        },
+        {
+          "heading": "Company Communications",
+          "subsections": []
         },
         {
           "heading": "Where to Find More Information",
@@ -46,8 +60,15 @@
           "subsections": [
             "Integrity in Business Dealings",
             "Conflicts of Interest",
-            "Gifts and Entertainment"
+            "Gifts and Entertainment",
+            "Antitrust and Fair Competition",
+            "Anti-Bribery and Anti-Corruption",
+            "Protection of Company Assets and Intellectual Property"
           ]
+        },
+        {
+          "heading": "Insider Trading and Confidential Information",
+          "subsections": []
         },
         {
           "heading": "Reporting Violations",
@@ -82,11 +103,21 @@
           "heading": "Reporting and Investigation Process",
           "subsections": [
             "How to File a Complaint",
-            "Investigation Timeline"
+            "Investigation Timeline",
+            "Interim Measures",
+            "Disciplinary Outcomes"
           ]
         },
         {
           "heading": "Non-Retaliation",
+          "subsections": []
+        },
+        {
+          "heading": "Manager Responsibilities",
+          "subsections": []
+        },
+        {
+          "heading": "Recordkeeping and Confidentiality",
           "subsections": []
         }
       ]
@@ -109,10 +140,25 @@
         },
         {
           "heading": "Inclusive Hiring Practices",
-          "subsections": []
+          "subsections": [
+            "Structured Interview Panels",
+            "Pay Equity Reviews"
+          ]
         },
         {
           "heading": "Diversity Education and Training",
+          "subsections": []
+        },
+        {
+          "heading": "Accessibility and Universal Design",
+          "subsections": []
+        },
+        {
+          "heading": "Supplier Diversity Program",
+          "subsections": []
+        },
+        {
+          "heading": "Measuring Progress and Accountability",
           "subsections": []
         }
       ]

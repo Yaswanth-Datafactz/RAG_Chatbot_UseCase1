@@ -10,6 +10,7 @@ for this particular test.
 
 import json
 import uuid
+from unittest.mock import patch
 
 from sqlalchemy import select
 
@@ -67,6 +68,42 @@ def _cleanup_conversation(conversation_id: uuid.UUID) -> None:
         db.close()
 
 
+def _suppress_real_current_run_and_make_conversation(title: str) -> tuple[uuid.UUID, uuid.UUID | None]:
+    """Shared setup for tests exercising retrieval.py's real "no current
+    run" refusal path un-faked: temporarily un-marks whatever real
+    current run exists (the dev database can hold one -- live Azure
+    credentials configured after Phase 6) and creates a fresh
+    conversation. Returns (conversation_id, previous_current_id) --
+    pass previous_current_id to _restore_current_run in `finally`."""
+    db = SessionLocal()
+    try:
+        previous_current = db.query(IngestionRun).filter(IngestionRun.is_current.is_(True)).one_or_none()
+        previous_current_id = previous_current.id if previous_current is not None else None
+        if previous_current is not None:
+            previous_current.is_current = False
+            db.commit()
+
+        conversation = Conversation(title=title)
+        db.add(conversation)
+        db.commit()
+        return conversation.id, previous_current_id
+    finally:
+        db.close()
+
+
+def _restore_current_run(previous_current_id: uuid.UUID | None) -> None:
+    if previous_current_id is None:
+        return
+    db = SessionLocal()
+    try:
+        restored = db.get(IngestionRun, previous_current_id)
+        if restored is not None:
+            restored.is_current = True
+            db.commit()
+    finally:
+        db.close()
+
+
 def test_post_message_requires_api_key(client):
     response = client.post(f"/api/v1/conversations/{uuid.uuid4()}/messages", json={"content": "hi"})
 
@@ -83,19 +120,13 @@ def test_post_message_404_for_unknown_conversation(client):
 
 
 def test_post_message_streams_refusal_end_to_end_when_no_corpus_is_indexed(client):
-    assert _no_current_ingestion_run_exists(), (
-        "This test relies on no ingestion run being current, to exercise "
-        "retrieval.py's real refusal path without faking Search/embeddings."
-    )
-
-    db = SessionLocal()
-    try:
-        conversation = Conversation(title="Refusal test")
-        db.add(conversation)
-        db.commit()
-        conversation_id = conversation.id
-    finally:
-        db.close()
+    """Exercises retrieval.py's real "no current ingestion run" refusal
+    path un-faked (no Search/embeddings faking needed -- retrieval
+    short-circuits before calling either). See docs/phase-7.md Deviations
+    for why the real current run must be temporarily suppressed rather
+    than assumed absent."""
+    conversation_id, previous_current_id = _suppress_real_current_run_and_make_conversation("Refusal test")
+    assert _no_current_ingestion_run_exists()
 
     app.dependency_overrides[_default_generation_adapter] = lambda: _UnusedGenerationAdapter()
     try:
@@ -116,3 +147,47 @@ def test_post_message_streams_refusal_end_to_end_when_no_corpus_is_indexed(clien
     finally:
         app.dependency_overrides.pop(_default_generation_adapter, None)
         _cleanup_conversation(conversation_id)
+        _restore_current_run(previous_current_id)
+
+
+def test_provider_in_request_body_selects_the_generation_adapter(client):
+    """ChatMessageRequest.provider (the frontend's model picker) must
+    reach get_generation_adapter() -- patches the factory itself (not
+    dependency_overrides, since this test verifies the wiring *to* the
+    factory, not what it returns) and reuses the same real "no current
+    run" refusal path as the test above, so no Search/embeddings faking
+    is needed and the adapter's own stream()/complete() never has to run
+    for this to prove the request body reached the right place."""
+    conversation_id, previous_current_id = _suppress_real_current_run_and_make_conversation("Provider selection test")
+
+    try:
+        with patch("app.api.v1.chat.get_generation_adapter", return_value=_UnusedGenerationAdapter()) as mock_factory:
+            response = client.post(
+                f"/api/v1/conversations/{conversation_id}/messages",
+                json={"content": "What is the executive severance policy?", "provider": "deepseek"},
+                headers=API_KEY_HEADER,
+            )
+
+        assert response.status_code == 200
+        mock_factory.assert_called_once_with("deepseek")
+    finally:
+        _cleanup_conversation(conversation_id)
+        _restore_current_run(previous_current_id)
+
+
+def test_omitted_provider_falls_back_to_the_configured_default(client):
+    conversation_id, previous_current_id = _suppress_real_current_run_and_make_conversation("Default provider test")
+
+    try:
+        with patch("app.api.v1.chat.get_generation_adapter", return_value=_UnusedGenerationAdapter()) as mock_factory:
+            response = client.post(
+                f"/api/v1/conversations/{conversation_id}/messages",
+                json={"content": "What is the executive severance policy?"},
+                headers=API_KEY_HEADER,
+            )
+
+        assert response.status_code == 200
+        mock_factory.assert_called_once_with(None)
+    finally:
+        _cleanup_conversation(conversation_id)
+        _restore_current_run(previous_current_id)

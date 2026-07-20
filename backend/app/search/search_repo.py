@@ -8,10 +8,10 @@ current run's, but are invisible to any query filtered on the *old*
 run_id, until Postgres flips which run is current. delete_old_run() only
 runs after that flip has committed -- see docs/phase-2.md.
 
-Vector field dimensionality is fixed at 1536 regardless of embedding
-model (see services/embedding.py) so swapping between text-embedding-3-small
-and -large for the Phase 8 comparison never requires an index schema
-change.
+Vector field dimensionality is fixed at 1536 (see services/embedding.py)
+to match text-embedding-3-large's requested output size -- changing
+embedding models now would require an index schema migration, not just a
+config change.
 """
 
 from __future__ import annotations

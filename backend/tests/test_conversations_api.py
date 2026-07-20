@@ -100,3 +100,46 @@ def test_get_conversation_404_for_unknown_id(client):
 
     assert response.status_code == 404
     assert response.json()["error"]["type"] == "not_found"
+
+
+def test_delete_conversation_requires_api_key(client):
+    response = client.delete(f"/api/v1/conversations/{uuid.uuid4()}")
+
+    assert response.status_code == 401
+
+
+def test_delete_conversation_404_for_unknown_id(client):
+    response = client.delete(f"/api/v1/conversations/{uuid.uuid4()}", headers=API_KEY_HEADER)
+
+    assert response.status_code == 404
+    assert response.json()["error"]["type"] == "not_found"
+
+
+def test_delete_conversation_removes_it_and_cascades_messages_and_citations(client):
+    create_response = client.post("/api/v1/conversations", json={"title": "to delete"}, headers=API_KEY_HEADER)
+    conversation_id = uuid.UUID(create_response.json()["id"])
+
+    db = SessionLocal()
+    try:
+        message = Message(conversation_id=conversation_id, role="assistant", content="Some cited answer.")
+        db.add(message)
+        db.flush()
+        db.add(Citation(message_id=message.id, document_id=uuid.uuid4(), rank=1, section_path="A", snippet="s"))
+        db.commit()
+        message_id = message.id
+    finally:
+        db.close()
+
+    delete_response = client.delete(f"/api/v1/conversations/{conversation_id}", headers=API_KEY_HEADER)
+    assert delete_response.status_code == 204
+    assert delete_response.content == b""
+
+    get_response = client.get(f"/api/v1/conversations/{conversation_id}", headers=API_KEY_HEADER)
+    assert get_response.status_code == 404
+
+    db = SessionLocal()
+    try:
+        assert db.get(Conversation, conversation_id) is None
+        assert db.get(Message, message_id) is None
+    finally:
+        db.close()

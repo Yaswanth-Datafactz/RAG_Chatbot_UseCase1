@@ -16,6 +16,16 @@ API_KEY_HEADER = {"X-API-Key": get_settings().api_key}
 def _make_fixture():
     db = SessionLocal()
     try:
+        # Temporarily un-mark any pre-existing real "current" run and
+        # restore it in _cleanup() -- the dev database can now hold one
+        # (live Azure credentials configured after Phase 6), and Phase 0's
+        # partial unique index allows at most one is_current=true row.
+        previous_current = db.query(IngestionRun).filter(IngestionRun.is_current.is_(True)).one_or_none()
+        previous_current_id = previous_current.id if previous_current is not None else None
+        if previous_current is not None:
+            previous_current.is_current = False
+            db.commit()
+
         run = IngestionRun(status="succeeded", embedding_model="fake", is_current=True, doc_count=1, chunk_count=2)
         document = Document(
             source_filename="fixture.md",
@@ -40,7 +50,7 @@ def _make_fixture():
         ]
         db.add_all(chunks)
         db.commit()
-        return {"run_id": run.id, "document_id": document.id}
+        return {"run_id": run.id, "document_id": document.id, "previous_current_id": previous_current_id}
     finally:
         db.close()
 
@@ -55,6 +65,13 @@ def _cleanup(ids: dict) -> None:
         if document is not None:
             db.delete(document)
         db.commit()
+
+        previous_current_id = ids.get("previous_current_id")
+        if previous_current_id is not None:
+            previous_current = db.get(IngestionRun, previous_current_id)
+            if previous_current is not None:
+                previous_current.is_current = True
+                db.commit()
     finally:
         db.close()
 

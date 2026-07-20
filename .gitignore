@@ -3,6 +3,7 @@ backend/.venv/
 corpus/.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Node
 frontend/node_modules/
@@ -25,3 +26,11 @@ docs/
 1_Program_Handbook.docx
 2_Week 1_Use_Case_1_RAG_Chatbot_Brief.docx
 ~$*.docx
+
+# Generated eval output (reproducible by re-running backend/scripts/run_retrieval_eval.py
+# against the live index; changes on every run, not hand-authored source)
+backend/eval/results.json
+
+# Claude Code local/personal tool settings (machine-specific permission allowlist,
+# not shared team config -- see .claude/settings.json convention)
+.claude/settings.local.json

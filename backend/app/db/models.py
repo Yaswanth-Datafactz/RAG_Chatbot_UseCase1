@@ -165,6 +165,7 @@ class Citation(Base):
     reranker_score: Mapped[float | None] = mapped_column(Float)
     section_path: Mapped[str | None] = mapped_column(String(1000))
     snippet: Mapped[str] = mapped_column(Text, nullable=False)
+    page_no: Mapped[int | None] = mapped_column(Integer)
 
     message: Mapped["Message"] = relationship(back_populates="citations")
     chunk: Mapped["Chunk | None"] = relationship(back_populates="citations")

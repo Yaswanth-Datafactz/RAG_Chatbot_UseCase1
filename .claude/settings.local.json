@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -i -X POST \"http://localhost:8000/api/v1/conversations/00000000-0000-0000-0000-000000000000/messages\" -H \"X-API-Key: changeme-dev-key\" -H \"Content-Type: application/json\" -d '{\"content\":\"hi\"}')",
+      "Bash(curl -s -i -X POST \"http://localhost:8000/api/v1/conversations/00000000-0000-0000-0000-000000000000/messages\" -H \"Content-Type: application/json\" -d '{\"content\":\"hi\"}')"
     ]
   }
 }

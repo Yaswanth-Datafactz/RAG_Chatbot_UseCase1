@@ -231,6 +231,27 @@ def _cleanup_previous_run(db: Session, previous_run: IngestionRun, search_repo_m
         search_repo_module.delete_old_run(str(previous_run.id))
         db.delete(previous_run)  # cascades to previous_run's chunks (ON DELETE CASCADE)
         db.commit()
+        _delete_orphaned_documents(db)
     except Exception as exc:  # noqa: BLE001
         db.rollback()
         logger.warning("ingestion_run_cleanup_failed", old_run_id=str(previous_run.id), error=str(exc))
+
+
+def _delete_orphaned_documents(db: Session) -> None:
+    """_upsert_document() reuses a Document row across runs when a file's
+    bytes are unchanged (matching sha256), so most Document rows survive
+    the swap above untouched -- they still have chunks in the new current
+    run. But when a file's content *changes*, upsert can't match the old
+    sha256 and inserts a fresh Document row for the new content; the old
+    row's chunks just got cascade-deleted with the previous run above,
+    leaving that old row referencing zero chunks anywhere. Delete any such
+    orphan so the admin documents list doesn't accumulate stale rows for
+    superseded content, which is genuinely confusing (same title/filename
+    appearing multiple times) rather than a display quirk to filter around."""
+    orphaned = db.execute(select(Document).where(~Document.chunks.any())).scalars().all()
+    if not orphaned:
+        return
+    for document in orphaned:
+        db.delete(document)
+    db.commit()
+    logger.info("orphaned_documents_deleted", count=len(orphaned), document_ids=[str(d.id) for d in orphaned])

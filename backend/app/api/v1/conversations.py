@@ -48,3 +48,17 @@ def get_conversation(conversation_id: uuid.UUID, db: Annotated[Session, Depends(
     if conversation is None:
         raise NotFoundError(f"Conversation {conversation_id} not found")
     return conversation
+
+
+@router.delete(
+    "/{conversation_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    responses={404: {"description": "Conversation not found"}},
+)
+def delete_conversation(conversation_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> None:
+    conversation = db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise NotFoundError(f"Conversation {conversation_id} not found")
+    db.delete(conversation)  # ON DELETE CASCADE removes messages -> citations
+    db.commit()

@@ -16,7 +16,7 @@ def _fake_embedding_client() -> EmbeddingClient:
     fake_openai.embeddings.create.side_effect = lambda model, input, dimensions: MagicMock(
         data=[MagicMock(embedding=[0.1] * dimensions) for _ in input]
     )
-    return EmbeddingClient(deployment="text-embedding-3-small", client=fake_openai)
+    return EmbeddingClient(deployment="text-embedding-3-large", client=fake_openai)
 
 
 def _chunk(
@@ -40,14 +40,33 @@ def _chunk(
     )
 
 
+def _suppress_real_current_run(db_session) -> None:
+    """The dev database can now hold a real, committed current run (live
+    Azure credentials configured after Phase 6/7) -- Phase 0's partial
+    unique index allows only one is_current=true row at a time, so tests
+    that need "no current run" or "this fixture's run is current" must
+    temporarily un-mark it. Since db_session never commits (conftest.py
+    rolls its transaction back at teardown), this reverts automatically --
+    no manual restore needed, unlike the SessionLocal()-based fixtures in
+    test_chat_service.py/test_documents_api.py/test_chat_api.py, which
+    commit for real and must restore explicitly in `finally`."""
+    existing = db_session.query(IngestionRun).filter(IngestionRun.is_current.is_(True)).one_or_none()
+    if existing is not None:
+        existing.is_current = False
+        db_session.flush()
+
+
 def _make_current_run(db_session) -> str:
-    run = IngestionRun(status="succeeded", embedding_model="text-embedding-3-small", is_current=True)
+    _suppress_real_current_run(db_session)
+    run = IngestionRun(status="succeeded", embedding_model="text-embedding-3-large", is_current=True)
     db_session.add(run)
     db_session.flush()
     return str(run.id)
 
 
 def test_get_current_run_id_returns_none_when_no_run_is_current(db_session):
+    _suppress_real_current_run(db_session)
+
     assert get_current_run_id(db_session) is None
 
 
@@ -58,6 +77,8 @@ def test_get_current_run_id_returns_the_current_runs_id(db_session):
 
 
 def test_refuses_when_no_current_run_exists_and_never_calls_search(db_session):
+    _suppress_real_current_run(db_session)
+
     def _should_not_be_called(*args, **kwargs):
         raise AssertionError("search_fn must not be called when there is no current ingestion run")
 

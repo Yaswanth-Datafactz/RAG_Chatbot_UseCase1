@@ -1,10 +1,14 @@
-"""Embedding client -- Azure OpenAI text-embedding-3-small by default,
-pluggable to text-embedding-3-large (docs/plan.md Decision #3).
+"""Embedding client -- Azure OpenAI text-embedding-3-large (docs/plan.md
+Decisions Register #3). text-embedding-3-small is not used anywhere in
+this project; no comparison deployment exists or is planned (removed by
+explicit user decision -- see docs/phase-8.md's item 3, now cancelled
+rather than deferred).
 
-Both v3 embedding models are requested at a fixed 1536-dim output (the
-`dimensions` parameter both support) so Azure AI Search's vector field
-dimensionality never has to change to compare them in Phase 8 -- see
-docs/phase-2.md for why the index is built around a fixed dimension.
+Requested at a fixed 1536-dim output (the `dimensions` parameter this
+model supports, truncating its native 3072-dim output) because Azure AI
+Search's vector field was built around that dimension -- see
+docs/phase-2.md. Changing this now would require a real index-schema
+migration, not just a config change.
 """
 
 from __future__ import annotations

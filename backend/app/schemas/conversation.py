@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,6 +32,7 @@ class CitationOut(BaseModel):
     reranker_score: float | None
     section_path: str | None
     snippet: str
+    page_no: int | None
 
 
 class MessageOut(BaseModel):
@@ -51,3 +53,9 @@ class ConversationDetail(ConversationOut):
 
 class ChatMessageRequest(BaseModel):
     content: str = Field(min_length=1, max_length=8000)
+    # Falls back to GENERATION_PROVIDER (core/config.py) when omitted --
+    # lets the frontend's model picker choose per-message. Kept in sync
+    # by hand with generation/__init__.py's _PROVIDERS (a Literal here
+    # gives a proper OpenAPI enum + a clean 422 on an invalid value,
+    # rather than a raw ValueError surfacing as a generic 500).
+    provider: Literal["claude", "azure_openai", "deepseek"] | None = Field(default=None)
