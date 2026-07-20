@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies (sanity check before deploying)
         run: pip install -r requirements.txt
 
+      - name: Stage corpus for deploy
+        run: cp -r ../corpus ./corpus
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp

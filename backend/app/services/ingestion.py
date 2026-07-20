@@ -40,7 +40,19 @@ from app.search import search_repo as _real_search_repo
 
 logger = get_logger("ingestion")
 
-DEFAULT_CORPUS_DIR = Path(__file__).resolve().parents[3] / "corpus"
+def _resolve_default_corpus_dir() -> Path:
+    # Azure App Service deploys only the `backend/` folder as the app root, so
+    # production needs the corpus colocated at backend/corpus (see the deploy
+    # workflow's "Stage corpus for deploy" step). Local dev keeps the corpus at
+    # the repo root, one level above backend/, so prefer the colocated copy
+    # when present and fall back to the repo-root copy otherwise.
+    backend_local = Path(__file__).resolve().parents[2] / "corpus"
+    if backend_local.is_dir():
+        return backend_local
+    return Path(__file__).resolve().parents[3] / "corpus"
+
+
+DEFAULT_CORPUS_DIR = _resolve_default_corpus_dir()
 
 
 def _utcnow() -> datetime:
