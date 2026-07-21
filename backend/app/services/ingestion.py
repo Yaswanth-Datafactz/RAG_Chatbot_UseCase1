@@ -24,6 +24,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Callable
@@ -39,6 +40,13 @@ from app.services.embedding import EmbeddingClient
 from app.search import search_repo as _real_search_repo
 
 logger = get_logger("ingestion")
+
+# Per-document work (parse -> chunk -> embed -> upload) is dominated by
+# network round-trips to Azure OpenAI/Azure AI Search, not CPU, so running
+# several documents concurrently overlaps that wait time instead of paying
+# for it once per document. Bounded rather than unbounded to stay polite to
+# the embedding/search services' own rate limits.
+INGESTION_CONCURRENCY = 4
 
 def _resolve_default_corpus_dir() -> Path:
     # Azure App Service deploys only the `backend/` folder as the app root, so
@@ -106,6 +114,59 @@ def _upsert_document(db: Session, corpus_dir: Path, entry: dict) -> Document:
     return document
 
 
+def _process_document(
+    corpus_dir: Path,
+    entry: dict,
+    document_id: uuid.UUID,
+    document_title: str,
+    run_id: uuid.UUID,
+    embedding_client: EmbeddingClient,
+    search_repo_module,
+) -> list[Chunk]:
+    """Parse -> chunk -> embed -> upload for one document. Runs in a worker
+    thread, so it deliberately takes no DB session -- Document rows are
+    upserted up front on the main thread instead, since SQLAlchemy Sessions
+    aren't safe to share across threads."""
+    sections = parsing.parse_document(corpus_dir / entry["filename"], entry["type"])
+    doc_chunks = chunking.chunk_sections(sections)
+    if not doc_chunks:
+        return []
+
+    vectors = embedding_client.embed_batch([c.content for c in doc_chunks])
+
+    chunk_rows: list[Chunk] = []
+    search_docs: list[search_repo_module.ChunkSearchDocument] = []
+    for chunk, vector in zip(doc_chunks, vectors, strict=True):
+        azure_doc_key = f"{run_id}_{document_id}_{chunk.chunk_index}"
+        chunk_rows.append(
+            Chunk(
+                document_id=document_id,
+                ingestion_run_id=run_id,
+                chunk_index=chunk.chunk_index,
+                section_path=chunk.section_path,
+                content=chunk.content,
+                token_count=chunk.token_count,
+                page_no=chunk.page_no,
+                azure_doc_key=azure_doc_key,
+            )
+        )
+        search_docs.append(
+            search_repo_module.ChunkSearchDocument(
+                id=azure_doc_key,
+                content=chunk.content,
+                section_path=chunk.section_path,
+                document_id=str(document_id),
+                document_title=document_title,
+                ingestion_run_id=str(run_id),
+                chunk_index=chunk.chunk_index,
+                content_vector=vector,
+            )
+        )
+
+    search_repo_module.upload_chunks(search_docs)
+    return chunk_rows
+
+
 def _mark_failed(db: Session, run_id: uuid.UUID, error: Exception) -> None:
     db.rollback()
     run = db.get(IngestionRun, run_id)
@@ -140,53 +201,45 @@ def run_ingestion(
         search_repo_module.create_index()
 
         manifest = _load_manifest(corpus_dir)
+
+        # Upsert every Document row up front, sequentially, on this thread's
+        # session -- cheap (one insert-or-lookup per doc) and keeps all DB
+        # access off the worker threads below.
+        documents = {entry["filename"]: _upsert_document(db, corpus_dir, entry) for entry in manifest["documents"]}
+
         doc_count = 0
         chunk_count = 0
 
-        for entry in manifest["documents"]:
-            document = _upsert_document(db, corpus_dir, entry)
-            sections = parsing.parse_document(corpus_dir / entry["filename"], entry["type"])
-            doc_chunks = chunking.chunk_sections(sections)
-            if not doc_chunks:
-                continue
+        executor = ThreadPoolExecutor(max_workers=INGESTION_CONCURRENCY)
+        try:
+            future_to_entry = {
+                executor.submit(
+                    _process_document,
+                    corpus_dir,
+                    entry,
+                    documents[entry["filename"]].id,
+                    documents[entry["filename"]].title,
+                    run_id,
+                    embedding_client,
+                    search_repo_module,
+                ): entry
+                for entry in manifest["documents"]
+            }
 
-            vectors = embedding_client.embed_batch([c.content for c in doc_chunks])
-
-            chunk_rows: list[Chunk] = []
-            search_docs: list[search_repo_module.ChunkSearchDocument] = []
-            for chunk, vector in zip(doc_chunks, vectors, strict=True):
-                azure_doc_key = f"{run_id}_{document.id}_{chunk.chunk_index}"
-                chunk_rows.append(
-                    Chunk(
-                        document_id=document.id,
-                        ingestion_run_id=run_id,
-                        chunk_index=chunk.chunk_index,
-                        section_path=chunk.section_path,
-                        content=chunk.content,
-                        token_count=chunk.token_count,
-                        page_no=chunk.page_no,
-                        azure_doc_key=azure_doc_key,
-                    )
-                )
-                search_docs.append(
-                    search_repo_module.ChunkSearchDocument(
-                        id=azure_doc_key,
-                        content=chunk.content,
-                        section_path=chunk.section_path,
-                        document_id=str(document.id),
-                        document_title=document.title,
-                        ingestion_run_id=str(run_id),
-                        chunk_index=chunk.chunk_index,
-                        content_vector=vector,
-                    )
-                )
-
-            db.add_all(chunk_rows)
-            db.commit()
-            search_repo_module.upload_chunks(search_docs)
-
-            doc_count += 1
-            chunk_count += len(chunk_rows)
+            for future in as_completed(future_to_entry):
+                chunk_rows = future.result()  # re-raises the worker's exception here, on the main thread
+                if not chunk_rows:
+                    continue
+                db.add_all(chunk_rows)
+                db.commit()
+                doc_count += 1
+                chunk_count += len(chunk_rows)
+        finally:
+            # cancel_futures drops any not-yet-started documents immediately
+            # on failure, rather than burning time processing work that will
+            # just be discarded; already-running ones finish naturally since
+            # threads can't be forcibly killed.
+            executor.shutdown(wait=True, cancel_futures=True)
 
         _swap_to_current(db, run_id, doc_count, chunk_count, search_repo_module)
 

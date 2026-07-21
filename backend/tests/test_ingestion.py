@@ -14,6 +14,7 @@ run's chunks fully intact in both Postgres and the search index.
 """
 
 import shutil
+import threading
 from pathlib import Path
 
 import pytest
@@ -76,7 +77,12 @@ class FakeSearchRepo:
 class FailAfterNCallsEmbeddingClient:
     """Simulates an embedding API that works fine for the first N calls,
     then fails -- e.g. a transient network/API error partway through a
-    long-running ingestion job. One call = one document's chunk batch."""
+    long-running ingestion job. One call = one document's chunk batch.
+
+    Documents are now processed concurrently (a bounded thread pool), so
+    which document's call lands on which count is nondeterministic -- the
+    counter itself still needs to be thread-safe for "first N succeed" to
+    mean anything well-defined."""
 
     deployment_name = "fake-embedding-model"
 
@@ -84,10 +90,13 @@ class FailAfterNCallsEmbeddingClient:
         self.calls = 0
         self.fail_after = fail_after
         self.dimensions = dimensions
+        self._lock = threading.Lock()
 
     def embed_batch(self, texts):
-        self.calls += 1
-        if self.fail_after is not None and self.calls > self.fail_after:
+        with self._lock:
+            self.calls += 1
+            call_number = self.calls
+        if self.fail_after is not None and call_number > self.fail_after:
             raise RuntimeError("Simulated embedding API failure mid-run")
         return [[0.01] * self.dimensions for _ in texts]
 
@@ -274,8 +283,12 @@ def test_crash_mid_run_leaves_previous_current_run_fully_intact():
     new_run_id = _new_run()
 
     try:
-        # mini_corpus has 3 documents; failing after the 1st embed_batch
-        # call means document #2's processing raises mid-run.
+        # mini_corpus has 3 documents, processed concurrently; failing
+        # after the 1st embed_batch call means exactly one document's
+        # processing succeeds and the other(s) raise mid-run -- which one
+        # is nondeterministic under concurrency, and that's fine: the
+        # invariant that matters is the previous run's isolation below, not
+        # which document happened to win the race.
         run_ingestion(
             new_run_id,
             corpus_dir=MINI_CORPUS_DIR,
@@ -290,11 +303,11 @@ def test_crash_mid_run_leaves_previous_current_run_fully_intact():
         assert "Simulated embedding API failure" in new_run_after.error
         assert new_run_after.is_current is False
 
-        # --- Proof of partial progress: doc #1's chunks WERE written
-        # under the new run_id before the crash, but that's harmless
-        # because is_current never pointed at them ---
+        # --- Proof of partial progress: exactly one document's chunks were
+        # written under the new run_id before the crash, but that's
+        # harmless because is_current never pointed at them ---
         new_run_chunk_count = _chunk_count(new_run_id)
-        assert 0 < new_run_chunk_count < old_chunk_count_before * 2  # only ~1 of 3 docs got through
+        assert 0 < new_run_chunk_count < old_chunk_count_before * 2  # only 1 of 3 docs got through
 
         # --- The old run is untouched: still current, same row, same chunks ---
         old_run_after = _get_run(old_run_id)
