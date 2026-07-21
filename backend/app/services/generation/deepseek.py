@@ -26,6 +26,16 @@ from app.services.generation.base import GenerationAdapter
 
 MAX_TOKENS = 1024
 
+# httpx defaults to a 5s timeout on every phase (connect/read/write/pool) if
+# none is given. DeepSeek-V3.2 is a reasoning model with a highly variable
+# time-to-first-token -- especially once the conversation history and
+# retrieved context grow the prompt -- so the 5s default read timeout was
+# tripping mid-conversation even though the request was still in flight, not
+# actually stuck. The OpenAI SDK client used for the Azure OpenAI path
+# doesn't hit this because it defaults to a 10-minute timeout with built-in
+# retries; this raw httpx client has neither, so it needs an explicit one.
+REQUEST_TIMEOUT = httpx.Timeout(connect=10.0, read=90.0, write=10.0, pool=10.0)
+
 
 class DeepSeekGenerationAdapter(GenerationAdapter):
     def __init__(self, client: httpx.AsyncClient | None = None, model: str | None = None):
@@ -33,7 +43,8 @@ class DeepSeekGenerationAdapter(GenerationAdapter):
         self.model_name = model or settings.azure_ai_foundry_model
         self._endpoint = settings.azure_ai_foundry_endpoint
         self._client = client or httpx.AsyncClient(
-            headers={"Content-Type": "application/json", "api-key": settings.azure_ai_foundry_api_key}
+            headers={"Content-Type": "application/json", "api-key": settings.azure_ai_foundry_api_key},
+            timeout=REQUEST_TIMEOUT,
         )
 
     def _body(self, system_prompt: str, user_prompt: str, *, stream: bool) -> dict:
@@ -64,7 +75,10 @@ class DeepSeekGenerationAdapter(GenerationAdapter):
                 payload = line[len("data:") :].strip()
                 if payload == "[DONE]":
                     break
-                chunk = json.loads(payload)
+                try:
+                    chunk = json.loads(payload)
+                except json.JSONDecodeError:
+                    continue  # a stray non-JSON keep-alive line -- skip rather than abort the whole stream
                 choices = chunk.get("choices") or []
                 if not choices:
                     continue  # the trailing usage-only chunk carries no choices

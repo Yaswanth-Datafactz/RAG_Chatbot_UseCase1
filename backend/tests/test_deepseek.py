@@ -13,7 +13,7 @@ import json
 import httpx
 import pytest
 
-from app.services.generation.deepseek import DeepSeekGenerationAdapter
+from app.services.generation.deepseek import DeepSeekGenerationAdapter, REQUEST_TIMEOUT
 
 
 def _client_with_handler(handler) -> httpx.AsyncClient:
@@ -91,3 +91,33 @@ def test_default_client_sends_the_configured_api_key_header():
     adapter = DeepSeekGenerationAdapter()  # no injected client -- builds its own
 
     assert adapter._client.headers["api-key"] == get_settings().azure_ai_foundry_api_key
+
+
+def test_default_client_has_a_generous_read_timeout_not_httpx_5s_default():
+    """Regression test: the default httpx timeout (5s on every phase) was
+    tripping mid-conversation against DeepSeek-V3.2's variable
+    time-to-first-token, surfacing as a generic "Generation failed." with
+    no indication it was actually just slow, not broken."""
+    adapter = DeepSeekGenerationAdapter()  # no injected client -- builds its own
+
+    assert adapter._client.timeout == REQUEST_TIMEOUT
+    assert adapter._client.timeout.read >= 60.0
+
+
+@pytest.mark.asyncio
+async def test_stream_skips_malformed_json_lines_instead_of_aborting():
+    sse_body = (
+        'data: {"choices":[{"delta":{"content":"Hel"}}]}\n\n'
+        "data: not-valid-json\n\n"
+        'data: {"choices":[{"delta":{"content":"lo"}}]}\n\n'
+        "data: [DONE]\n\n"
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=sse_body.encode(), headers={"content-type": "text/event-stream"})
+
+    adapter = DeepSeekGenerationAdapter(client=_client_with_handler(handler), model="DeepSeek-V3.2-test")
+
+    deltas = [chunk async for chunk in adapter.stream("system", "question")]
+
+    assert deltas == ["Hel", "lo"]
