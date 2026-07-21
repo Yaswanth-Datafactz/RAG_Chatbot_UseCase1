@@ -167,6 +167,31 @@ def _process_document(
     return chunk_rows
 
 
+def reap_stale_runs(session_factory: Callable[[], Session] | None = None) -> int:
+    """Marks any ingestion_runs row still 'pending'/'running' as 'failed'.
+    Meant to be called once at app startup: run_ingestion() only tracks
+    progress in the memory of whichever process is executing its
+    BackgroundTasks job, so a row left in either status means that process
+    is gone (crashed, redeployed, restarted) -- it can never finish the
+    row itself. Left alone, ReindexPanel's poll-until-terminal design keeps
+    that run "in progress" forever, which permanently disables the
+    Re-index button with no way for the UI to recover on its own."""
+    session_factory = session_factory or SessionLocal
+    db = session_factory()
+    try:
+        stale = db.execute(select(IngestionRun).where(IngestionRun.status.in_(["pending", "running"]))).scalars().all()
+        for run in stale:
+            run.status = "failed"
+            run.error = "Interrupted by an application restart before this run finished."
+            run.finished_at = _utcnow()
+        if stale:
+            db.commit()
+            logger.warning("stale_ingestion_runs_reaped", count=len(stale), run_ids=[str(r.id) for r in stale])
+        return len(stale)
+    finally:
+        db.close()
+
+
 def _mark_failed(db: Session, run_id: uuid.UUID, error: Exception) -> None:
     db.rollback()
     run = db.get(IngestionRun, run_id)

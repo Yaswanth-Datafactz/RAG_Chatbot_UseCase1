@@ -23,7 +23,7 @@ from sqlalchemy import select
 from app.db.models import Chunk, Document, IngestionRun
 from app.db.session import SessionLocal
 from app.search.search_repo import ChunkSearchDocument
-from app.services.ingestion import run_ingestion, start_ingestion_run
+from app.services.ingestion import reap_stale_runs, run_ingestion, start_ingestion_run
 
 MINI_CORPUS_DIR = Path(__file__).resolve().parent / "fixtures" / "mini_corpus"
 
@@ -322,3 +322,49 @@ def test_crash_mid_run_leaves_previous_current_run_fully_intact():
     finally:
         _cleanup_run(old_run_id)
         _cleanup_run(new_run_id)
+
+
+def test_reap_stale_runs_fails_orphaned_pending_and_running_rows():
+    """A row stuck in 'pending' or 'running' can only mean the process that
+    was going to finish it is gone (crashed, redeployed) -- there is no
+    other code path that leaves a row in either status once the app that
+    created it is no longer running. reap_stale_runs() is meant to run once
+    at startup so such a row doesn't disable the Admin UI's Re-index button
+    forever (ReindexPanel polls until a terminal status, which an orphaned
+    row never reaches on its own)."""
+    db = SessionLocal()
+    try:
+        pending_run = start_ingestion_run(db)
+        running_run = start_ingestion_run(db)
+        running_run.status = "running"
+        running_run.started_at = None
+        db.commit()
+
+        succeeded_run = start_ingestion_run(db)
+        succeeded_run.status = "succeeded"
+        db.commit()
+
+        pending_id, running_id, succeeded_id = pending_run.id, running_run.id, succeeded_run.id
+    finally:
+        db.close()
+
+    try:
+        reaped_count = reap_stale_runs()
+        assert reaped_count == 2
+
+        pending_after = _get_run(pending_id)
+        running_after = _get_run(running_id)
+        succeeded_after = _get_run(succeeded_id)
+
+        assert pending_after.status == "failed"
+        assert pending_after.error is not None
+        assert running_after.status == "failed"
+        assert running_after.error is not None
+
+        # Untouched: reap_stale_runs() must only ever act on non-terminal rows.
+        assert succeeded_after.status == "succeeded"
+        assert succeeded_after.error is None
+    finally:
+        _cleanup_run(pending_id)
+        _cleanup_run(running_id)
+        _cleanup_run(succeeded_id)
