@@ -45,8 +45,13 @@ logger = get_logger("ingestion")
 # network round-trips to Azure OpenAI/Azure AI Search, not CPU, so running
 # several documents concurrently overlaps that wait time instead of paying
 # for it once per document. Bounded rather than unbounded to stay polite to
-# the embedding/search services' own rate limits.
-INGESTION_CONCURRENCY = 4
+# the embedding/search services' own rate limits -- and kept low (not higher)
+# because the parse/chunk portion of each worker IS real CPU work (PDF/DOCX
+# text extraction), and this runs on a single-vCPU App Service plan: too much
+# parallelism there contends for the GIL against the same process's ability
+# to serve unrelated incoming requests (e.g. the Admin page's status-poll
+# request went briefly unanswered during a 4-way run -- see docs/deployment.md).
+INGESTION_CONCURRENCY = 2
 
 def _resolve_default_corpus_dir() -> Path:
     # Azure App Service deploys only the `backend/` folder as the app root, so
