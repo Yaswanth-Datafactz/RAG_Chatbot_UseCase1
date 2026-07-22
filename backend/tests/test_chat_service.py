@@ -15,6 +15,7 @@ control exactly what comes back from "retrieval" and focus on what chat.py
 does with it.
 """
 
+import asyncio
 import json
 import uuid
 from unittest.mock import patch
@@ -399,6 +400,65 @@ async def test_history_triggers_rewrite_and_persists_rewritten_query_on_the_user
         assert newest_user_message.content == "What about for contractors?"
         assert newest_user_message.rewritten_query == "What is the PTO policy for contractors?"
         db.close()
+    finally:
+        _cleanup(ids)
+
+
+@pytest.mark.asyncio
+async def test_rewrite_generate_fn_runs_on_the_same_event_loop_as_stream():
+    """Regression test for a real production bug: _generate_fn originally
+    used asyncio.run(), which spins up and tears down a brand-new event
+    loop just for the rewrite call -- but the same generation_adapter
+    instance is reused a few lines later for the real answer's .stream()
+    call, on the request's actual running loop. An async HTTP client's
+    connections are bound to whichever loop first used them, so handing
+    the adapter to a second, throwaway loop and back breaks it.
+    DeepSeekGenerationAdapter's hand-rolled httpx client surfaced this
+    directly in production as 'TCPTransport closed=True; the handler is
+    closed' on .stream() following a rewrite earlier in the same request.
+    Claude/Azure OpenAI almost certainly hit the same defect but their
+    SDKs' built-in retry-on-connection-error silently papered over it.
+    This fake records which loop each adapter method actually ran on."""
+    ids = _make_fixture()
+    try:
+        db = SessionLocal()
+        prior_user = Message(conversation_id=ids["conversation_id"], role="user", content="What is the PTO policy?")
+        prior_assistant = Message(
+            conversation_id=ids["conversation_id"], role="assistant", content="Full-time employees accrue 15 days/year."
+        )
+        db.add_all([prior_user, prior_assistant])
+        db.commit()
+
+        conversation = db.get(Conversation, ids["conversation_id"])
+        seen_loop_ids: list[int] = []
+
+        class LoopCapturingAdapter(FakeGenerationAdapter):
+            async def complete(self, system_prompt: str, user_prompt: str) -> str:
+                seen_loop_ids.append(id(asyncio.get_running_loop()))
+                return await super().complete(system_prompt, user_prompt)
+
+            async def stream(self, system_prompt: str, user_prompt: str):
+                seen_loop_ids.append(id(asyncio.get_running_loop()))
+                async for chunk in super().stream(system_prompt, user_prompt):
+                    yield chunk
+
+        adapter = LoopCapturingAdapter(complete_response="What is the PTO policy for contractors?")
+
+        def _fake_retrieve(db_arg, query, **kwargs):
+            chunk = _search_result(ids["azure_doc_key"], ids["document_id"])
+            return RetrievalResult(chunks=[chunk], refused=False, top_reranker_score=3.0)
+
+        this_loop_id = id(asyncio.get_running_loop())
+
+        with patch.object(chat_service, "retrieve", side_effect=_fake_retrieve):
+            await _collect(chat_service.stream_chat_response(db, conversation, "What about for contractors?", adapter))
+        db.close()
+
+        # One call from the rewrite step's _generate_fn (complete()), one
+        # from the real answer (stream()) -- both must see this same loop.
+        assert len(seen_loop_ids) == 2
+        assert seen_loop_ids[0] == this_loop_id
+        assert seen_loop_ids[1] == this_loop_id
     finally:
         _cleanup(ids)
 

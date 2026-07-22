@@ -193,8 +193,26 @@ async def stream_chat_response(
     db.add(user_message)
     db.commit()
 
+    # Bridging back to the *same* running event loop (not asyncio.run(),
+    # which spins up and tears down a brand-new one) matters here: this
+    # generation_adapter instance is reused a few lines down for the real
+    # answer's .stream() call, on this loop. An async HTTP client's
+    # connection pool is bound to whichever loop first used it -- handing
+    # the same client to a second, temporary loop and then back to this one
+    # leaves it holding a connection into a now-closed loop. That surfaced
+    # as DeepSeekGenerationAdapter's hand-rolled httpx client raising
+    # "TCPTransport closed=True; the handler is closed" on the .stream()
+    # call following a rewrite on the same adapter instance -- the Claude/
+    # Azure OpenAI SDK clients likely hit the same defect, just silently
+    # papered over it via their own built-in retry-on-connection-error logic
+    # that DeepSeek's minimal client doesn't have.
+    loop = asyncio.get_running_loop()
+
     def _generate_fn(prompt: str) -> str:
-        return asyncio.run(generation_adapter.complete(REWRITE_SYSTEM_PROMPT, prompt))
+        future = asyncio.run_coroutine_threadsafe(
+            generation_adapter.complete(REWRITE_SYSTEM_PROMPT, prompt), loop
+        )
+        return future.result()
 
     try:
         standalone_query = await run_in_threadpool(rewrite_query, history, question, _generate_fn)
